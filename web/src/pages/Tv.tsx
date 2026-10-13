@@ -94,8 +94,8 @@ export default function Tv() {
       <span>{offline ? '⚠️ Reconnecting…' : screen && screen.pageCount > 1 ? `${screen.page + 1} / ${screen.pageCount}` : ''}</span>
       {state.settings.submissionsOpen && qr && (
         <div className="tv-qr">
-          <span>Submit your costume</span>
-          <img src={qr} alt="QR code to submit a costume" />
+          <span>Scan to show off your outfit ✨</span>
+          <img src={qr} alt="QR code to share your outfit" />
         </div>
       )}
     </div>
@@ -105,9 +105,8 @@ export default function Tv() {
     return (
       <div className="tv" onClick={goFullscreen}>
         <div className="reveal">
-          <p className="eyebrow">{EVENT_NAME}</p>
-          <h1>🎃 Costume Contest</h1>
-          <p className="reveal-caption muted">Scan to submit your costume</p>
+          <h1>🎃 {EVENT_NAME}</h1>
+          <p className="reveal-caption muted">Scan to show everyone your creative outfit ✨</p>
           {qr && <img src={qr} alt="" style={{ height: '35vh', background: '#fff', padding: '1vh', borderRadius: '2vh' }} />}
         </div>
       </div>
@@ -145,7 +144,7 @@ function Reveal({ revealed, step }: { revealed: NonNullable<PublicState['reveale
         <p className="eyebrow">{EVENT_NAME}</p>
         <p className="reveal-place muted">And the winners for…</p>
         <h1 className="pop" key={revealed.category.id}>{revealed.category.name}</h1>
-        {step > 0 && <p className="muted">No votes in this category yet.</p>}
+        {step > 0 && <p className="muted">No votes here yet.</p>}
       </div>
     );
   }

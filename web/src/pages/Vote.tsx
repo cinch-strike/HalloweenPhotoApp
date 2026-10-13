@@ -128,8 +128,7 @@ export default function Vote() {
   if (kioskOk === false) {
     return (
       <div className="page center">
-        <p className="eyebrow">{EVENT_NAME}</p>
-        <h1>🗳️ Voting kiosk</h1>
+        <h1>🎃 {EVENT_NAME}</h1>
         <p className="muted">This device isn’t set up for voting yet. An admin needs to open <b>/admin → Contest → Set up this device as the voting kiosk</b>.</p>
       </div>
     );
@@ -139,9 +138,8 @@ export default function Vote() {
   if (!state.settings.votingOpen && step.kind !== 'thanks') {
     return (
       <div className="page center">
-        <p className="eyebrow">{EVENT_NAME}</p>
-        <h1>🗳️ Costume Contest Voting</h1>
-        <p className="muted">Voting isn’t open yet — check back soon!</p>
+        <h1>🎃 {EVENT_NAME}</h1>
+        <p className="muted">The voting booth opens soon — go admire everyone’s looks in the meantime! 👀</p>
       </div>
     );
   }
@@ -151,7 +149,7 @@ export default function Vote() {
       <div className="page center stack" onClick={reset}>
         <p className="eyebrow">{EVENT_NAME}</p>
         <h1>Thanks, {name.trim()}! 👻</h1>
-        <p className="muted">Your votes are in. Next voter, tap to start.</p>
+        <p className="muted">Your votes are cast. Next voter — tap to begin!</p>
       </div>
     );
   }
@@ -159,9 +157,8 @@ export default function Vote() {
   if (step.kind === 'name' || step.kind === 'confirmName') {
     return (
       <div className="page stack">
-        <p className="eyebrow center">{EVENT_NAME}</p>
-        <h1 className="center">🗳️ Vote for the best costumes</h1>
-        <p className="muted center">Pick your top {PICKS_PER_CATEGORY} in every category.</p>
+        <h1 className="center">🎃 {EVENT_NAME}</h1>
+        <p className="muted center">Help crown the best looks of the night — pick your top {PICKS_PER_CATEGORY} in every category.</p>
         {step.kind === 'name' ? (
           <form className="stack" onSubmit={(e) => { e.preventDefault(); if (name.trim()) start(); }}>
             <div>
@@ -169,7 +166,7 @@ export default function Vote() {
               <input id="voter" type="text" value={name} maxLength={NAME_MAX} autoComplete="off" placeholder="Type your name" onChange={(e) => setName(e.target.value)} />
             </div>
             {error && <p className="error">{error}</p>}
-            <button className="btn-primary btn-block" disabled={!name.trim() || busy}>{busy ? 'Loading…' : 'Start voting'}</button>
+            <button className="btn-primary btn-block" disabled={!name.trim() || busy}>{busy ? 'Loading…' : 'Let’s vote 🗳️'}</button>
           </form>
         ) : (
           <div className="card stack">
@@ -193,7 +190,7 @@ export default function Vote() {
           <button className="btn-small" onClick={reset}>Cancel</button>
         </div>
         <p className="muted">Choose a category, then pick {PICKS_PER_CATEGORY} favourites.</p>
-        {categories.length === 0 && <p className="muted">No costumes to vote on yet.</p>}
+        {categories.length === 0 && <p className="muted">No outfits to vote on yet.</p>}
         {categories.map((c) => {
           const n = picks[c.id]?.length ?? 0;
           const done = n === required(c.id);
@@ -207,7 +204,7 @@ export default function Vote() {
         })}
         {error && <p className="error">{error}</p>}
         <button className="btn-primary btn-block" disabled={!complete || busy} onClick={submit}>
-          {busy ? 'Submitting…' : complete ? 'Submit my votes' : `Pick ${PICKS_PER_CATEGORY} in every category to submit`}
+          {busy ? 'Casting…' : complete ? '✨ Cast my votes' : `Pick ${PICKS_PER_CATEGORY} in every category to cast your votes`}
         </button>
       </div>
     );
@@ -229,7 +226,7 @@ export default function Vote() {
         <b>{chosen.length}/{need} picked</b>
       </div>
       <h2 style={{ margin: 0 }}>{category?.name}</h2>
-      <p className="muted" style={{ margin: 0 }}>Tap a photo to see it bigger and swipe through them all.</p>
+      <p className="muted" style={{ margin: 0 }}>Tap a photo to see it up close, then swipe through them all.</p>
       <div className="grid9">
         {pages[page]?.map((p) => {
           const rank = chosen.indexOf(p.id);
