@@ -1,0 +1,19 @@
+{
+  "name": "@hpa/infra",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "synth": "cdk synth",
+    "deploy": "cdk deploy --profile ${AWS_PROFILE:-halloween} --require-approval never ${BUDGET_EMAIL:+-c budgetEmail=$BUDGET_EMAIL}",
+    "destroy": "cdk destroy --profile ${AWS_PROFILE:-halloween}"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.273.0",
+    "constructs": "^10.8.1"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.1145.0",
+    "esbuild": "^0.28.2"
+  }
+}
