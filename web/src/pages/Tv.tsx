@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import type { PublicPhoto, PublicState } from '@hpa/shared';
+import { EVENT_NAME, type PublicPhoto, type PublicState } from '@hpa/shared';
 import { byCategory, chunk, getPhotos, getState } from '../api';
 
 const PER_SCREEN = 9;
@@ -105,6 +105,7 @@ export default function Tv() {
     return (
       <div className="tv" onClick={goFullscreen}>
         <div className="reveal">
+          <p className="eyebrow">{EVENT_NAME}</p>
           <h1>🎃 Costume Contest</h1>
           <p className="reveal-caption muted">Scan to submit your costume</p>
           {qr && <img src={qr} alt="" style={{ height: '35vh', background: '#fff', padding: '1vh', borderRadius: '2vh' }} />}
@@ -115,6 +116,7 @@ export default function Tv() {
 
   return (
     <div className="tv" onClick={goFullscreen}>
+      <p className="eyebrow">{EVENT_NAME}</p>
       <h1 className="tv-title">{screen.catName}</h1>
       <div className="tv-grid tv-fade" key={`${screen.catId}-${screen.page}`}>
         {screen.photos.map((p) => (
@@ -140,6 +142,7 @@ function Reveal({ revealed, step }: { revealed: NonNullable<PublicState['reveale
   if (step === 0 || !headline) {
     return (
       <div className="reveal" onClick={goFullscreen}>
+        <p className="eyebrow">{EVENT_NAME}</p>
         <p className="reveal-place muted">And the winners for…</p>
         <h1 className="pop" key={revealed.category.id}>{revealed.category.name}</h1>
         {step > 0 && <p className="muted">No votes in this category yet.</p>}

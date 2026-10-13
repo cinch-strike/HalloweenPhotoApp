@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CAPTION_MAX, NAME_MAX, type PublicState } from '@hpa/shared';
+import { CAPTION_MAX, EVENT_NAME, NAME_MAX, type PublicState } from '@hpa/shared';
 import { getState, uploadPhoto } from '../api';
 import { resizeToJpeg } from '../image';
 
@@ -59,6 +59,7 @@ export default function Submit() {
   if (!state.settings.submissionsOpen) {
     return (
       <div className="page center">
+        <p className="eyebrow">{EVENT_NAME}</p>
         <h1>🎃 Costume Contest</h1>
         <p className="muted">Submissions are closed — see you at the party!</p>
       </div>
@@ -68,6 +69,7 @@ export default function Submit() {
   if (status.kind === 'done') {
     return (
       <div className="page center stack">
+        <p className="eyebrow">{EVENT_NAME}</p>
         <h1>🎃 You’re in!</h1>
         <p className="muted">Your costume will appear on the big screen at the party.</p>
         {photo && <img className="preview" src={photo.url} alt="" />}
@@ -83,6 +85,7 @@ export default function Submit() {
   return (
     <div className="page stack">
       <header className="center">
+        <p className="eyebrow">{EVENT_NAME}</p>
         <h1>🎃 Costume Contest</h1>
         <p className="muted">Pick a category, add a photo of your costume and give it a title.</p>
       </header>

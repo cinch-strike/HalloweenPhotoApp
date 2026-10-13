@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { NAME_MAX, PICKS_PER_CATEGORY, type Category, type Picks, type PublicPhoto, type PublicState } from '@hpa/shared';
+import { EVENT_NAME, NAME_MAX, PICKS_PER_CATEGORY, type Category, type Picks, type PublicPhoto, type PublicState } from '@hpa/shared';
 import { api, ApiError, byCategory, chunk, getPhotos, getState, getToken, KIOSK_KEY } from '../api';
 import PhotoViewer from '../components/PhotoViewer';
 
@@ -128,6 +128,7 @@ export default function Vote() {
   if (kioskOk === false) {
     return (
       <div className="page center">
+        <p className="eyebrow">{EVENT_NAME}</p>
         <h1>🗳️ Voting kiosk</h1>
         <p className="muted">This device isn’t set up for voting yet. An admin needs to open <b>/admin → Contest → Set up this device as the voting kiosk</b>.</p>
       </div>
@@ -138,6 +139,7 @@ export default function Vote() {
   if (!state.settings.votingOpen && step.kind !== 'thanks') {
     return (
       <div className="page center">
+        <p className="eyebrow">{EVENT_NAME}</p>
         <h1>🗳️ Costume Contest Voting</h1>
         <p className="muted">Voting isn’t open yet — check back soon!</p>
       </div>
@@ -147,6 +149,7 @@ export default function Vote() {
   if (step.kind === 'thanks') {
     return (
       <div className="page center stack" onClick={reset}>
+        <p className="eyebrow">{EVENT_NAME}</p>
         <h1>Thanks, {name.trim()}! 👻</h1>
         <p className="muted">Your votes are in. Next voter, tap to start.</p>
       </div>
@@ -156,6 +159,7 @@ export default function Vote() {
   if (step.kind === 'name' || step.kind === 'confirmName') {
     return (
       <div className="page stack">
+        <p className="eyebrow center">{EVENT_NAME}</p>
         <h1 className="center">🗳️ Vote for the best costumes</h1>
         <p className="muted center">Pick your top {PICKS_PER_CATEGORY} in every category.</p>
         {step.kind === 'name' ? (

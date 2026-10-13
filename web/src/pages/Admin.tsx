@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import QRCode from 'qrcode';
-import { PICKS_PER_CATEGORY, type Category, type Picks } from '@hpa/shared';
+import { EVENT_NAME, PICKS_PER_CATEGORY, type Category, type Picks } from '@hpa/shared';
 import { ADMIN_KEY, api, ApiError, getToken, KIOSK_KEY, setToken, type AdminData, type AdminPhoto } from '../api';
 import PhotoViewer from '../components/PhotoViewer';
 
@@ -63,7 +63,10 @@ export default function Admin() {
   return (
     <div className="page-wide">
       <div className="row" style={{ marginBottom: 12 }}>
-        <h1 style={{ margin: 0 }}>🎃 Contest admin</h1>
+        <div>
+          <p className="eyebrow">{EVENT_NAME}</p>
+          <h1 style={{ margin: 0 }}>🎃 Contest admin</h1>
+        </div>
         <span className="spacer" />
         <button className="btn-small" onClick={refresh}>↻ Refresh</button>
         <button className="btn-small" onClick={logout}>Log out</button>
@@ -110,7 +113,10 @@ function Login({ onToken }: { onToken: (t: string) => void }) {
         }
       }}
     >
-      <h1>🎃 Contest admin</h1>
+      <div>
+        <p className="eyebrow">{EVENT_NAME}</p>
+        <h1>🎃 Contest admin</h1>
+      </div>
       <div>
         <label htmlFor="pc">Admin passcode</label>
         <input id="pc" type="password" value={passcode} onChange={(e) => setPasscode(e.target.value)} autoFocus />

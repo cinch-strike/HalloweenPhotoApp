@@ -76,6 +76,8 @@ export interface PublicState {
   revealed?: { category: Category; winners: RevealedWinner[] };
 }
 
+export const EVENT_NAME = 'Halloween at the Lane 2026';
+
 export const CAPTION_MAX = 80;
 export const NAME_MAX = 40;
 export const PICKS_PER_CATEGORY = 3;
