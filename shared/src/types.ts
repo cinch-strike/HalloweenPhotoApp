@@ -50,6 +50,8 @@ export interface Settings {
   submissionsOpen: boolean;
   votingOpen: boolean;
   carouselSeconds: number;
+  /** Photos per TV screen; one of TV_LAYOUTS' keys. */
+  photosPerScreen: number;
   reveal: RevealState;
 }
 
@@ -78,6 +80,16 @@ export interface PublicState {
 
 export const EVENT_NAME = 'Halloween at the Lane 2026';
 
+/** Photos per TV screen -> grid columns x rows. */
+export const TV_LAYOUTS: Record<number, { cols: number; rows: number }> = {
+  1: { cols: 1, rows: 1 },
+  2: { cols: 2, rows: 1 },
+  4: { cols: 2, rows: 2 },
+  6: { cols: 3, rows: 2 },
+  9: { cols: 3, rows: 3 },
+  12: { cols: 4, rows: 3 },
+};
+
 export const CAPTION_MAX = 80;
 export const NAME_MAX = 40;
 export const PICKS_PER_CATEGORY = 3;
@@ -89,5 +101,6 @@ export const DEFAULT_SETTINGS: Settings = {
   submissionsOpen: true,
   votingOpen: false,
   carouselSeconds: 10,
+  photosPerScreen: 9,
   reveal: { active: false, catIndex: 0, step: 0 },
 };

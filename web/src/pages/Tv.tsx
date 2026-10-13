@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import { EVENT_NAME, type PublicPhoto, type PublicState } from '@hpa/shared';
+import { DEFAULT_SETTINGS, EVENT_NAME, TV_LAYOUTS, type PublicPhoto, type PublicState } from '@hpa/shared';
 import { byCategory, chunk, getPhotos, getState } from '../api';
 
-const PER_SCREEN = 9;
 const STATE_POLL_MS = 2000;
 
 interface Screen {
@@ -17,17 +16,18 @@ interface Screen {
 /** Works out the screen after `current`: next 9 in the same category, else the next category with photos (looping). */
 function nextScreen(state: PublicState, photos: PublicPhoto[], current: Screen | null): Screen | null {
   const groups = byCategory(photos);
+  const perScreen = state.settings.photosPerScreen;
   const cats = state.categories.filter((c) => groups[c.id]?.length);
   if (!cats.length) return null;
   let catIdx = current ? cats.findIndex((c) => c.id === current.catId) : -1;
   let page = 0;
-  if (catIdx >= 0 && current!.page + 1 < Math.ceil(groups[cats[catIdx].id].length / PER_SCREEN)) {
+  if (catIdx >= 0 && current!.page + 1 < Math.ceil(groups[cats[catIdx].id].length / perScreen)) {
     page = current!.page + 1;
   } else {
     catIdx = (catIdx + 1) % cats.length;
   }
   const cat = cats[catIdx];
-  const pages = chunk(groups[cat.id], PER_SCREEN);
+  const pages = chunk(groups[cat.id], perScreen);
   return { catId: cat.id, catName: cat.name, page, pageCount: pages.length, photos: pages[page] };
 }
 
@@ -87,6 +87,7 @@ export default function Tv() {
   }, [ready]);
 
   if (!state) return <div className="tv"><h1 className="tv-title muted">Loading…</h1></div>;
+  const layout = TV_LAYOUTS[state.settings.photosPerScreen] ?? TV_LAYOUTS[DEFAULT_SETTINGS.photosPerScreen];
   if (state.revealed) return <Reveal revealed={state.revealed} step={state.settings.reveal.step} />;
 
   const footer = (
@@ -117,7 +118,15 @@ export default function Tv() {
     <div className="tv" onClick={goFullscreen}>
       <p className="eyebrow">{EVENT_NAME}</p>
       <h1 className="tv-title">{screen.catName}</h1>
-      <div className="tv-grid tv-fade" key={`${screen.catId}-${screen.page}`}>
+      <div
+        className="tv-grid tv-fade"
+        key={`${screen.catId}-${screen.page}`}
+        style={{
+          gridTemplateColumns: `repeat(${layout.cols}, 1fr)`,
+          gridTemplateRows: `repeat(${layout.rows}, 1fr)`,
+          ['--tv-caption' as string]: `${Math.max(2.3, 6 / layout.rows)}vh`,
+        }}
+      >
         {screen.photos.map((p) => (
           <figure className="tv-cell" key={p.id} style={{ margin: 0 }}>
             <img src={p.url} alt="" />

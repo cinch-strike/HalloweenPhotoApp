@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import QRCode from 'qrcode';
-import { EVENT_NAME, PICKS_PER_CATEGORY, type Category, type Picks } from '@hpa/shared';
+import { EVENT_NAME, PICKS_PER_CATEGORY, TV_LAYOUTS, type Category, type Picks } from '@hpa/shared';
 import { ADMIN_KEY, api, ApiError, getToken, KIOSK_KEY, setToken, type AdminData, type AdminPhoto } from '../api';
 import PhotoViewer from '../components/PhotoViewer';
 
@@ -155,6 +155,14 @@ function ContestTab({ data, act, call }: TabProps) {
           <label htmlFor="secs" style={{ margin: 0 }}>TV seconds per screen</label>
           <input id="secs" type="number" min={3} max={120} value={seconds} onChange={(e) => setSeconds(e.target.value)} style={{ width: 100 }} />
           <button className="btn-small" onClick={() => act('PUT', '/api/admin/settings', { carouselSeconds: Number(seconds) })}>Save</button>
+        </div>
+        <div className="row">
+          <label htmlFor="per" style={{ margin: 0 }}>Photos per TV screen</label>
+          <select id="per" value={settings.photosPerScreen} onChange={(e) => act('PUT', '/api/admin/settings', { photosPerScreen: Number(e.target.value) })} style={{ width: 200 }}>
+            {Object.entries(TV_LAYOUTS).map(([n, l]) => (
+              <option key={n} value={n}>{n === '1' ? '1 (full screen)' : `${n} (${l.cols}×${l.rows} grid)`}</option>
+            ))}
+          </select>
         </div>
       </div>
 

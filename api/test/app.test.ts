@@ -74,6 +74,14 @@ describe('api', () => {
     expect((await call('POST', '/api/uploads', { catId: cat.id, caption: 'x' })).status).toBe(403);
   });
 
+  it('photos per TV screen defaults to 9 and only accepts known layouts', async () => {
+    const admin = await adminToken();
+    expect(((await call('GET', '/api/state')).body as PublicState).settings.photosPerScreen).toBe(9);
+    expect((await call('PUT', '/api/admin/settings', { photosPerScreen: 5 }, admin)).status).toBe(400);
+    await call('PUT', '/api/admin/settings', { photosPerScreen: 1 }, admin);
+    expect(((await call('GET', '/api/state')).body as PublicState).settings.photosPerScreen).toBe(1);
+  });
+
   it('validates captions', async () => {
     const [cat] = await categories();
     expect((await call('POST', '/api/uploads', { catId: cat.id, caption: '  ' })).status).toBe(400);

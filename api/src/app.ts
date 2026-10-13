@@ -6,6 +6,7 @@ import {
   MAX_UPLOAD_BYTES,
   NAME_MAX,
   scoreCategory,
+  TV_LAYOUTS,
   validateAdminRanks,
   validateBallot,
   type Ballot,
@@ -68,7 +69,7 @@ export function createApp(deps: Deps) {
 
   async function settings(): Promise<Settings> {
     const s = await store.getSettings();
-    if (s) return s;
+    if (s) return { ...DEFAULT_SETTINGS, ...s }; // fills settings added after first deploy
     // First run: seed default categories. The conditional write stops concurrent first requests seeding twice.
     if (await store.createSettingsIfAbsent(DEFAULT_SETTINGS)) {
       await Promise.all(
@@ -283,6 +284,11 @@ export function createApp(deps: Deps) {
       const n = Number(body.carouselSeconds);
       if (!Number.isInteger(n) || n < 3 || n > 120) fail(400, 'Carousel seconds must be 3–120');
       next.carouselSeconds = n;
+    }
+    if (body.photosPerScreen !== undefined) {
+      const n = Number(body.photosPerScreen);
+      if (!TV_LAYOUTS[n]) fail(400, `Photos per screen must be one of ${Object.keys(TV_LAYOUTS).join(', ')}`);
+      next.photosPerScreen = n;
     }
     await store.putSettings(next);
     return next;
