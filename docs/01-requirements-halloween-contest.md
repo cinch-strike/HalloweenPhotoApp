@@ -71,16 +71,16 @@
 - **Edge cases:** If a name has already voted, the voter is warned but allowed to continue, and the admin sees duplicates flagged (A-04).
 
 ### FR-06 — Admin vote
-- Donnie and Bianca cast **one joint admin ballot**, ranking 1st/2nd/3rd per category (Bianca enters it).
+- Donnie and Bianca cast **one joint admin ballot**: up to 3 unranked picks per category (Bianca enters it).
 
 ### FR-07 — Results (admin only)
-- Per category: each photo's public votes, crowd points, admin points, total, and place, with 1st/2nd/3rd highlighted.
-- **Scoring — rank points, two equal juries (confirmed):**
-  - **Crowd jury:** photos are ranked by public vote count. The top 3 get **3 / 2 / 1** crowd points. Photos tied on vote count share the higher place (e.g. two photos tied for 2nd both get 2 points, and the next one gets nothing — standard competition ranking).
-  - **Admin jury:** admin 1st / 2nd / 3rd = **3 / 2 / 1** admin points.
-  - **Total** = crowd points + admin points.
-  - **Tie-breakers:** (1) more public votes, (2) the higher admin rank, (3) still tied → flagged for a manual decision in admin.
-  - Worked example (validated with Donnie): public A35 B30 C25 D20 E10, admin D>C>E → A 1st (3+0, 35 votes), C 2nd (1+2), D 3rd (0+3).
+- Per category: each photo's guest votes, whether it's one of our picks, bonus votes, total and place, with 1st/2nd/3rd highlighted.
+- **Scoring (revised 2026-10-30, replaces rank points):**
+  - Every guest pick = **1 vote**. Guests pick 3 per category and the order doesn't matter.
+  - Each of our 3 picks adds **bonus votes = 15% of ballots cast** (rounded, minimum 1). For example, 60 ballots → +9 per pick.
+  - **Total** = guest votes + bonus. Highest total wins.
+  - **Tie-breakers:** more guest votes; still tied → flagged for a manual decision.
+  - **Intent:** we can sway a close race (e.g. a bloc-voted favourite) but can't overturn a clear crowd favourite. No veto.
 
 ### FR-09 — Winners reveal (TV)
 - The admin switches the TV into reveal mode and steps through each category: 3rd → 2nd → 1st, with the full-screen photo and caption. Results are never shown on the TV until the admin triggers it.

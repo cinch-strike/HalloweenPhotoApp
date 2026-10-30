@@ -58,9 +58,8 @@ export interface Settings {
 export interface ResultRow {
   photoId: string;
   publicVotes: number;
-  crowdPoints: number;
-  adminRank: number | null;
-  adminPoints: number;
+  adminPick: boolean;
+  bonusVotes: number;
   total: number;
   place: number;
   tied: boolean;

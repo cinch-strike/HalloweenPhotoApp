@@ -1,14 +1,20 @@
 import { PICKS_PER_CATEGORY, type Ballot, type Picks, type ResultRow } from './types';
 
-const POINTS = [3, 2, 1];
+/** Each of our (admin) picks adds bonus votes worth this share of the ballots cast. */
+export const ADMIN_BONUS_SHARE = 0.15;
+
+/** Bonus votes per admin pick: 15% of ballots cast, rounded, and at least 1 so our picks always count. */
+export function adminBonus(ballotCount: number): number {
+  return Math.max(1, Math.round(ballotCount * ADMIN_BONUS_SHARE));
+}
 
 /**
- * Rank-points scoring for one category (requirements FR-07).
- * Crowd jury: top 3 by public votes get 3/2/1, ties share the higher place (competition ranking).
- * Admin jury: admin 1st/2nd/3rd get 3/2/1.
- * Total = crowd + admin. Tie-breakers: public votes, then admin rank; still tied => flagged.
+ * Scoring for one category (requirements FR-07, revised 2026-10-30).
+ * Every guest pick is 1 vote. Each of our (unranked) picks adds adminBonus(ballots) votes, so we can
+ * sway a close race but not overturn a clear crowd favourite.
+ * Ties go to more guest votes; still tied => flagged for a manual decision.
  */
-export function scoreCategory(photoIds: string[], ballots: Ballot[], catId: string, adminRanks: string[] = []): ResultRow[] {
+export function scoreCategory(photoIds: string[], ballots: Ballot[], catId: string, adminPicks: string[] = []): ResultRow[] {
   const ids = new Set(photoIds);
   const votes = new Map(photoIds.map((id) => [id, 0]));
   for (const b of ballots) {
@@ -16,19 +22,17 @@ export function scoreCategory(photoIds: string[], ballots: Ballot[], catId: stri
       if (ids.has(pid)) votes.set(pid, votes.get(pid)! + 1);
     }
   }
+  const bonus = adminBonus(ballots.length);
+  const picks = new Set(adminPicks.slice(0, PICKS_PER_CATEGORY));
 
   const rows: ResultRow[] = photoIds.map((photoId) => {
     const publicVotes = votes.get(photoId)!;
-    const crowdRank = 1 + photoIds.filter((other) => votes.get(other)! > publicVotes).length;
-    const crowdPoints = publicVotes > 0 && crowdRank <= POINTS.length ? POINTS[crowdRank - 1] : 0;
-    const idx = adminRanks.indexOf(photoId);
-    const adminRank = idx >= 0 && idx < POINTS.length ? idx + 1 : null;
-    const adminPoints = adminRank ? POINTS[adminRank - 1] : 0;
-    return { photoId, publicVotes, crowdPoints, adminRank, adminPoints, total: crowdPoints + adminPoints, place: 0, tied: false };
+    const adminPick = picks.has(photoId);
+    const bonusVotes = adminPick ? bonus : 0;
+    return { photoId, publicVotes, adminPick, bonusVotes, total: publicVotes + bonusVotes, place: 0, tied: false };
   });
 
-  const cmp = (a: ResultRow, b: ResultRow) =>
-    b.total - a.total || b.publicVotes - a.publicVotes || (a.adminRank ?? 99) - (b.adminRank ?? 99);
+  const cmp = (a: ResultRow, b: ResultRow) => b.total - a.total || b.publicVotes - a.publicVotes;
   rows.sort(cmp);
 
   rows.forEach((row, i) => {
@@ -58,7 +62,7 @@ export function validateBallot(picks: Picks, livePhotos: Record<string, string[]
   return null;
 }
 
-/** Admin ranks may be saved partially, but must be unique live photos and at most 3 per category. */
+/** Admin picks may be saved partially, but must be unique live photos and at most 3 per category. */
 export function validateAdminRanks(ranks: Picks, livePhotos: Record<string, string[]>): string | null {
   for (const [catId, chosen] of Object.entries(ranks)) {
     const photoIds = livePhotos[catId];

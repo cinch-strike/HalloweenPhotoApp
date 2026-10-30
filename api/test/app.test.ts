@@ -113,24 +113,24 @@ describe('api', () => {
     expect((await call('GET', '/api/ballots/check', undefined, kiosk, { name: ' sam ' })).body).toEqual({ voted: true });
   });
 
-  it('AC-07 + reveal: results combine crowd and admin points; TV only sees revealed steps', async () => {
+  it('AC-07 + reveal: totals are guest votes plus our bonus; TV only sees revealed steps', async () => {
     const admin = await adminToken();
     const [c1] = await categories();
     const [a, b, c, d] = await Promise.all(['A', 'B', 'C', 'D'].map((cap) => submit(c1.id, cap)));
     await call('PUT', '/api/admin/settings', { votingOpen: true }, admin);
-    // Crowd: a 2 votes, b 2, c 1, d 1 -> a,b share 1st (3 pts), c,d share 3rd (1 pt).
-    await call('POST', '/api/ballots', { id: 'x', voterName: 'X', picks: { [c1.id]: [a, b, c] } }, admin);
-    await call('POST', '/api/ballots', { id: 'y', voterName: 'Y', picks: { [c1.id]: [a, b, d] } }, admin);
-    await call('PUT', '/api/admin/admin-ballot', { ranks: { [c1.id]: [d, c, b] } }, admin);
+    // Guest votes: a 4, b 3, c 3, d 2 (4 ballots -> bonus = max(1, round(0.6)) = 1)
+    const picks = [[a, b, c], [a, b, d], [a, b, c], [a, c, d]];
+    for (const [i, p] of picks.entries()) await call('POST', '/api/ballots', { id: `b${i}`, voterName: `V${i}`, picks: { [c1.id]: p } }, admin);
+    await call('PUT', '/api/admin/admin-ballot', { ranks: { [c1.id]: [d, c] } }, admin);
 
     const data = (await call('GET', '/api/admin/data', undefined, admin)).body as { results: Record<string, { photoId: string; total: number; place: number }[]> };
-    // a 3+0=3 (2 votes), b 3+1=4, c 1+2=3 (1 vote), d 1+3=4 (1 vote) -> b, d, a, c
-    expect(data.results[c1.id].map((r) => [r.photoId, r.total, r.place])).toEqual([[b, 4, 1], [d, 4, 2], [a, 3, 3], [c, 3, 4]]);
+    // a 4, c 3+1=4 (fewer guest votes), b 3, d 2+1=3 (fewer guest votes)
+    expect(data.results[c1.id].map((r) => [r.photoId, r.total, r.place])).toEqual([[a, 4, 1], [c, 4, 2], [b, 3, 3], [d, 3, 4]]);
 
     expect(((await call('GET', '/api/state')).body as PublicState).revealed).toBeUndefined();
     await call('PUT', '/api/admin/reveal', { active: true, catIndex: 0, step: 1 }, admin);
     let state = (await call('GET', '/api/state')).body as PublicState;
-    expect(state.revealed!.winners.map((w) => [w.place, w.photo.caption])).toEqual([[3, 'A']]);
+    expect(state.revealed!.winners.map((w) => [w.place, w.photo.caption])).toEqual([[3, 'B']]);
     await call('PUT', '/api/admin/reveal', { active: true, catIndex: 0, step: 3 }, admin);
     state = (await call('GET', '/api/state')).body as PublicState;
     expect(state.revealed!.winners.map((w) => w.place)).toEqual([1, 2, 3]);

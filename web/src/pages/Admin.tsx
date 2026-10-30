@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import QRCode from 'qrcode';
-import { EVENT_NAME, PICKS_PER_CATEGORY, TV_LAYOUTS, type Category, type Picks } from '@hpa/shared';
+import { ADMIN_BONUS_SHARE, adminBonus, EVENT_NAME, PICKS_PER_CATEGORY, TV_LAYOUTS, type Category, type Picks } from '@hpa/shared';
 import { ADMIN_KEY, api, ApiError, getToken, KIOSK_KEY, setToken, type AdminData, type AdminPhoto } from '../api';
 import PhotoViewer from '../components/PhotoViewer';
 
@@ -330,7 +330,10 @@ function AdminVoteTab({ data, act }: TabProps) {
 
   return (
     <div className="stack">
-      <p className="muted">Tap photos in order: first tap = 🥇 1st, second = 🥈 2nd, third = 🥉 3rd. Tap a ranked photo to remove it. Tap the 🔍 to see it big.</p>
+      <p className="muted">
+        Tap up to {PICKS_PER_CATEGORY} favourites per category (no order). Each of our picks adds bonus votes worth {ADMIN_BONUS_SHARE * 100}% of
+        ballots cast — currently <b>{adminBonus(data.ballotCount)}</b> per pick. Tap again to remove; tap 🔍 to see it big.
+      </p>
       {data.categories.map((c) => {
         const photos = live.filter((p) => p.catId === c.id);
         const r = ranks[c.id] ?? [];
@@ -345,7 +348,7 @@ function AdminVoteTab({ data, act }: TabProps) {
                   <div key={p.id} style={{ position: 'relative' }}>
                     <button className={`tile ${rank >= 0 ? 'picked' : ''}`} style={{ width: '100%' }} onClick={() => toggle(c.id, p.id)}>
                       <img src={p.url} alt="" loading="lazy" />
-                      {rank >= 0 && <span className="badge">{['🥇', '🥈', '🥉'][rank]}</span>}
+                      {rank >= 0 && <span className="badge">✓</span>}
                       <span className="tile-caption">{p.caption}</span>
                     </button>
                     <button className="btn-small" style={{ position: 'absolute', top: 4, left: 4, minHeight: 30, padding: '2px 8px' }} onClick={() => setViewer({ catId: c.id, index: i })} aria-label="View larger">🔍</button>
@@ -364,8 +367,8 @@ function AdminVoteTab({ data, act }: TabProps) {
           index={viewer.index}
           onIndex={(index) => setViewer({ ...viewer, index })}
           onClose={() => setViewer(null)}
-          status={(() => { const k = (ranks[viewer.catId] ?? []).indexOf(viewerPhotos[viewer.index].id); return k >= 0 ? `Ranked ${['1st', '2nd', '3rd'][k]}` : undefined; })()}
-          action={{ label: 'Rank / unrank', onClick: () => toggle(viewer.catId, viewerPhotos[viewer.index].id), primary: true }}
+          status={(ranks[viewer.catId] ?? []).includes(viewerPhotos[viewer.index].id) ? '✓ One of our picks' : undefined}
+          action={{ label: 'Pick / unpick', onClick: () => toggle(viewer.catId, viewerPhotos[viewer.index].id), primary: true }}
         />
       )}
     </div>
@@ -383,7 +386,10 @@ function ResultsTab({ data }: TabProps) {
         {data.duplicateNames.length > 0 && <span className="error">⚠ Same name voted more than once: {data.duplicateNames.join(', ')}</span>}
         {data.lostVotes > 0 && <span className="muted">{data.lostVotes} vote{data.lostVotes === 1 ? ' was' : 's were'} for photos since hidden or deleted (not counted).</span>}
       </div>
-      <p className="muted">Scoring: crowd top 3 by votes get 3/2/1 points, our 1st/2nd/3rd get 3/2/1 points. Total = both. Ties go to more public votes, then our ranking.</p>
+      <p className="muted">
+        Scoring: every guest pick = 1 vote. Each of our picks adds <b>{adminBonus(data.ballotCount)}</b> bonus votes
+        ({ADMIN_BONUS_SHARE * 100}% of {data.ballotCount} ballots). Highest total wins; ties go to more guest votes.
+      </p>
       {data.categories.map((c) => {
         const rows = data.results[c.id] ?? [];
         return (
@@ -391,7 +397,7 @@ function ResultsTab({ data }: TabProps) {
             <h3>{c.name}</h3>
             {rows.length === 0 ? <p className="muted">No photos.</p> : (
               <table>
-                <thead><tr><th>Place</th><th></th><th>Costume</th><th>Votes</th><th>Crowd pts</th><th>Our rank</th><th>Our pts</th><th>Total</th></tr></thead>
+                <thead><tr><th>Place</th><th></th><th>Costume</th><th>Guest votes</th><th>Our pick</th><th>Bonus</th><th>Total</th></tr></thead>
                 <tbody>
                   {rows.map((r) => {
                     const p = photo(r.photoId);
@@ -401,9 +407,8 @@ function ResultsTab({ data }: TabProps) {
                         <td>{p && <img className="thumb" src={p.url} alt="" />}</td>
                         <td>{p?.caption}</td>
                         <td>{r.publicVotes}</td>
-                        <td>{r.crowdPoints}</td>
-                        <td>{r.adminRank ?? '—'}</td>
-                        <td>{r.adminPoints}</td>
+                        <td>{r.adminPick ? '✓' : '—'}</td>
+                        <td>{r.bonusVotes ? `+${r.bonusVotes}` : ''}</td>
                         <td><b>{r.total}</b></td>
                       </tr>
                     );
