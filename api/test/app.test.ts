@@ -136,6 +136,42 @@ describe('api', () => {
     expect(state.revealed!.winners.map((w) => w.place)).toEqual([1, 2, 3]);
   });
 
+  it('three-way tie: flagged, settled with a tie-break order, and our picks keep the tie-break', async () => {
+    const admin = await adminToken();
+    const [c1] = await categories();
+    const ids = [];
+    for (const cap of ['X', 'Y', 'Z']) ids.push(await submit(c1.id, cap));
+    await call('PUT', '/api/admin/settings', { votingOpen: true }, admin);
+    for (const v of ['a', 'b']) await call('POST', '/api/ballots', { id: v, voterName: v, picks: { [c1.id]: ids } }, admin);
+    type Data = { results: Record<string, { photoId: string; place: number; tied: boolean }[]> };
+    let rows = ((await call('GET', '/api/admin/data', undefined, admin)).body as Data).results[c1.id];
+    expect(rows.every((r) => r.tied && r.place === 1)).toBe(true);
+
+    const order = [ids[2], ids[0], ids[1]];
+    expect((await call('PUT', '/api/admin/tie-break', { catId: c1.id, order: ['nope'] }, admin)).status).toBe(400);
+    expect((await call('PUT', '/api/admin/tie-break', { catId: c1.id, order }, admin)).status).toBe(200);
+    await call('PUT', '/api/admin/admin-ballot', { ranks: { [c1.id]: ids } }, admin); // all picked: still equal
+    rows = ((await call('GET', '/api/admin/data', undefined, admin)).body as Data).results[c1.id];
+    expect(rows.map((r) => [r.photoId, r.place, r.tied])).toEqual([[ids[2], 1, false], [ids[0], 2, false], [ids[1], 3, false]]);
+  });
+
+  it('reveal with only two scorers shows 2nd then 1st', async () => {
+    const admin = await adminToken();
+    const [c1] = await categories();
+    const [a, b] = [await submit(c1.id, 'A'), await submit(c1.id, 'B')];
+    await submit(c1.id, 'C');
+    await call('PUT', '/api/admin/settings', { votingOpen: true }, admin);
+    await call('PUT', '/api/admin/admin-ballot', { ranks: { [c1.id]: [a, b] } }, admin);
+    // No guest ballots: only our two picks score (1 bonus vote each), tie settled by order.
+    await call('PUT', '/api/admin/tie-break', { catId: c1.id, order: [a, b] }, admin);
+    const winners = async (step: number) => {
+      await call('PUT', '/api/admin/reveal', { active: true, catIndex: 0, step }, admin);
+      return ((await call('GET', '/api/state')).body as PublicState).revealed!.winners.map((w) => [w.place, w.photo.caption]);
+    };
+    expect(await winners(1)).toEqual([[2, 'B']]);
+    expect(await winners(2)).toEqual([[1, 'A'], [2, 'B']]);
+  });
+
   it('AC-01: categories can be added, renamed, reordered; non-empty ones cannot be deleted', async () => {
     const admin = await adminToken();
     const added = (await call('POST', '/api/admin/categories', { name: 'Best Pet' }, admin)).body as Category;

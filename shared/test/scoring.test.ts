@@ -55,6 +55,17 @@ describe('scoreCategory', () => {
     expect(rows[2].tied).toBe(false);
   });
 
+  it('settles exact ties with our chosen order, without overriding real differences', () => {
+    const b = ballots({ X: 2, Y: 2, Z: 2, W: 3 });
+    const rows = scoreCategory(['X', 'Y', 'Z', 'W'], b, C, [], ['Z', 'X', 'Y', 'W']);
+    expect(rows.map((r) => [r.photoId, r.place, r.tied])).toEqual([
+      ['W', 1, false], // more votes beats the tie-break order
+      ['Z', 2, false],
+      ['X', 3, false],
+      ['Y', 4, false],
+    ]);
+  });
+
   it('ignores votes for photos that are no longer live, and counts a duplicated pick once', () => {
     let rows = scoreCategory(['A', 'B'], ballots({ A: 2, GONE: 50 }), C);
     expect(rows[0]).toMatchObject({ photoId: 'A', publicVotes: 2, total: 2 });

@@ -377,7 +377,7 @@ function AdminVoteTab({ data, act }: TabProps) {
 
 // ---------------- Results ----------------
 
-function ResultsTab({ data }: TabProps) {
+function ResultsTab({ data, act }: TabProps) {
   const photo = (id: string) => data.photos.find((p) => p.id === id);
   return (
     <div className="stack">
@@ -395,11 +395,14 @@ function ResultsTab({ data }: TabProps) {
         return (
           <div key={c.id} className="card" style={{ overflowX: 'auto' }}>
             <h3>{c.name}</h3>
+            {rows.some((r) => r.tied) && (
+              <p className="error">⚠ Tie on the podium. Decide between you, then tap <b>▲ Move up</b> on the costume that should place higher.</p>
+            )}
             {rows.length === 0 ? <p className="muted">No photos.</p> : (
               <table>
-                <thead><tr><th>Place</th><th></th><th>Costume</th><th>Guest votes</th><th>Our pick</th><th>Bonus</th><th>Total</th></tr></thead>
+                <thead><tr><th>Place</th><th></th><th>Costume</th><th>Guest votes</th><th>Our pick</th><th>Bonus</th><th>Total</th><th></th></tr></thead>
                 <tbody>
-                  {rows.map((r) => {
+                  {rows.map((r, i) => {
                     const p = photo(r.photoId);
                     return (
                       <tr key={r.photoId}>
@@ -410,6 +413,21 @@ function ResultsTab({ data }: TabProps) {
                         <td>{r.adminPick ? '✓' : '—'}</td>
                         <td>{r.bonusVotes ? `+${r.bonusVotes}` : ''}</td>
                         <td><b>{r.total}</b></td>
+                        <td>
+                          {i > 0 && rows[i - 1].total === r.total && rows[i - 1].publicVotes === r.publicVotes && (
+                            <button
+                              className="btn-small"
+                              title="Settle the tie: put this costume above the one before it"
+                              onClick={() => {
+                                const order = rows.map((x) => x.photoId);
+                                [order[i - 1], order[i]] = [order[i], order[i - 1]];
+                                act('PUT', '/api/admin/tie-break', { catId: c.id, order });
+                              }}
+                            >
+                              ▲ Move up
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
@@ -431,39 +449,50 @@ function ResultsTab({ data }: TabProps) {
 
 // ---------------- Reveal ----------------
 
-const STEP_LABEL = ['Category title', '3rd place', '2nd place', '1st place'];
+const PLACE_NAME: Record<number, string> = { 1: '🥇 1st place', 2: '🥈 2nd place', 3: '🥉 3rd place' };
 
 function RevealTab({ data, act }: TabProps) {
   const { reveal } = data.settings;
   const cats = data.categories;
+  const podiumOf = (i: number) => (cats[i] ? (data.results[cats[i].id] ?? []).filter((r) => r.total > 0).slice(0, 3) : []);
+  // Only categories where someone scored are worth revealing.
+  const revealable = cats.map((_, i) => i).filter((i) => podiumOf(i).length > 0);
   const set = (catIndex: number, step: number, active = true) => act('PUT', '/api/admin/reveal', { active, catIndex, step });
+
+  const current = cats[reveal.catIndex];
+  const podium = podiumOf(reveal.catIndex);
+  const steps = podium.length; // step k shows podium[steps - k]
+  const stepLabel = (k: number) => (k === 0 ? 'Category title' : (PLACE_NAME[podium[steps - k]?.place] ?? `#${podium[steps - k]?.place}`));
+  const nextCat = revealable.find((i) => i > reveal.catIndex);
+  const prevCat = [...revealable].reverse().find((i) => i < reveal.catIndex);
+
   const next = () => {
-    if (reveal.step < 3) set(reveal.catIndex, reveal.step + 1);
-    else if (reveal.catIndex < cats.length - 1) set(reveal.catIndex + 1, 0);
+    if (reveal.step < steps) set(reveal.catIndex, reveal.step + 1);
+    else if (nextCat !== undefined) set(nextCat, 0);
   };
   const back = () => {
     if (reveal.step > 0) set(reveal.catIndex, reveal.step - 1);
-    else if (reveal.catIndex > 0) set(reveal.catIndex - 1, 3);
+    else if (prevCat !== undefined) set(prevCat, podiumOf(prevCat).length);
   };
-  const isLast = reveal.catIndex >= cats.length - 1 && reveal.step === 3;
-  const current = cats[reveal.catIndex];
-  const podium = current ? (data.results[current.id] ?? []).filter((r) => r.total > 0).slice(0, 3) : [];
+  const isLast = reveal.step >= steps && nextCat === undefined;
   const tie = podium.some((r) => r.tied);
 
   return (
     <div className="stack">
-      <p className="muted">The TV switches to the reveal within ~2 seconds. Check the Results tab for ties first.</p>
+      <p className="muted">The TV switches to the reveal within ~2 seconds. Turn voting off and settle any ties on the Results tab first.</p>
+      {revealable.length === 0 && <p className="error">No votes yet — there’s nothing to reveal.</p>}
       {!reveal.active ? (
-        <button className="btn-primary" onClick={() => set(0, 0)} disabled={cats.length === 0}>▶ Start winners reveal on the TV</button>
+        <button className="btn-primary" onClick={() => set(revealable[0], 0)} disabled={revealable.length === 0}>▶ Start winners reveal on the TV</button>
       ) : (
         <div className="card stack">
           <div className="muted">Now showing on TV</div>
-          <h2 style={{ margin: 0 }}>{current?.name} — {STEP_LABEL[reveal.step]}</h2>
-          {tie && <p className="error">⚠ This category has a tie on the podium — decide before revealing.</p>}
+          <h2 style={{ margin: 0 }}>{current?.name} — {stepLabel(Math.min(reveal.step, steps))}</h2>
+          {steps === 0 && <p className="error">Nobody scored in this category — tap Next category.</p>}
+          {tie && <p className="error">⚠ This category has a tie — settle it on the Results tab (▲ Move up) before revealing.</p>}
           <div className="row">
-            <button onClick={back} disabled={reveal.catIndex === 0 && reveal.step === 0}>◀ Back</button>
+            <button onClick={back} disabled={reveal.step === 0 && prevCat === undefined}>◀ Back</button>
             <button className="btn-primary" onClick={next} disabled={isLast} style={{ minWidth: 200 }}>
-              {reveal.step < 3 ? `Reveal ${STEP_LABEL[reveal.step + 1]} ▶` : 'Next category ▶'}
+              {reveal.step < steps ? `Reveal ${stepLabel(reveal.step + 1)} ▶` : isLast ? 'All categories revealed 🎉' : 'Next category ▶'}
             </button>
           </div>
           <button className="btn-danger" onClick={() => set(0, 0, false)}>End reveal (back to carousel)</button>
@@ -471,8 +500,8 @@ function RevealTab({ data, act }: TabProps) {
       )}
       <div className="stack">
         {cats.map((c, i) => (
-          <button key={c.id} className={`choice ${reveal.active && i === reveal.catIndex ? 'selected' : ''}`} onClick={() => set(i, 0)}>
-            Jump to: {c.name}
+          <button key={c.id} className={`choice ${reveal.active && i === reveal.catIndex ? 'selected' : ''}`} onClick={() => set(i, 0)} disabled={!revealable.includes(i)}>
+            Jump to: {c.name}{revealable.includes(i) ? '' : ' (no votes)'}
           </button>
         ))}
       </div>

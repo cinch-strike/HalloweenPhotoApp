@@ -12,9 +12,15 @@ export function adminBonus(ballotCount: number): number {
  * Scoring for one category (requirements FR-07, revised 2026-10-30).
  * Every guest pick is 1 vote. Each of our (unranked) picks adds adminBonus(ballots) votes, so we can
  * sway a close race but not overturn a clear crowd favourite.
- * Ties go to more guest votes; still tied => flagged for a manual decision.
+ * Ties go to more guest votes, then to the order we set to settle the tie; otherwise flagged for a decision.
  */
-export function scoreCategory(photoIds: string[], ballots: Ballot[], catId: string, adminPicks: string[] = []): ResultRow[] {
+export function scoreCategory(
+  photoIds: string[],
+  ballots: Ballot[],
+  catId: string,
+  adminPicks: string[] = [],
+  tieBreak: string[] = [],
+): ResultRow[] {
   const ids = new Set(photoIds);
   const votes = new Map(photoIds.map((id) => [id, 0]));
   for (const b of ballots) {
@@ -32,7 +38,8 @@ export function scoreCategory(photoIds: string[], ballots: Ballot[], catId: stri
     return { photoId, publicVotes, adminPick, bonusVotes, total: publicVotes + bonusVotes, place: 0, tied: false };
   });
 
-  const cmp = (a: ResultRow, b: ResultRow) => b.total - a.total || b.publicVotes - a.publicVotes;
+  const tb = (id: string) => (tieBreak.includes(id) ? tieBreak.indexOf(id) : Number.MAX_SAFE_INTEGER);
+  const cmp = (a: ResultRow, b: ResultRow) => b.total - a.total || b.publicVotes - a.publicVotes || tb(a.photoId) - tb(b.photoId);
   rows.sort(cmp);
 
   rows.forEach((row, i) => {

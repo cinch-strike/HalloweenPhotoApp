@@ -99,7 +99,7 @@ export function createApp(deps: Deps) {
     const { photos, byCat } = await livePhotosByCategory(categories);
     const [ballots, admin] = await Promise.all([store.listBallots(), store.getAdminBallot()]);
     const out: Record<string, ResultRow[]> = {};
-    for (const c of categories) out[c.id] = scoreCategory(byCat[c.id], ballots, c.id, admin?.ranks[c.id] ?? []);
+    for (const c of categories) out[c.id] = scoreCategory(byCat[c.id], ballots, c.id, admin?.ranks[c.id] ?? [], admin?.tieBreaks?.[c.id] ?? []);
     return { out, photos, ballots, admin };
   }
 
@@ -123,8 +123,8 @@ export function createApp(deps: Deps) {
       const category = categories[s.reveal.catIndex];
       const { out, photos } = await results([category]);
       const podium = out[category.id].filter((r) => r.total > 0).slice(0, 3);
-      // step 1 reveals 3rd, step 2 adds 2nd, step 3 adds 1st.
-      const shown = podium.filter((_, i) => i >= 3 - s.reveal.step);
+      // Each step reveals the next podium spot from the bottom (3rd, then 2nd, then 1st); fewer than 3 scorers means fewer steps.
+      const shown = podium.filter((_, i) => i >= podium.length - s.reveal.step);
       const byId = new Map(photos.map((p) => [p.id, p]));
       state.revealed = {
         category,
@@ -311,7 +311,24 @@ export function createApp(deps: Deps) {
     const { byCat } = await livePhotosByCategory(await sortedCategories());
     const error = validateAdminRanks(ranks, byCat);
     if (error) fail(400, error);
-    await store.putAdminBallot({ ranks, updatedAt: now().toISOString() });
+    const existing = await store.getAdminBallot();
+    await store.putAdminBallot({ ranks, tieBreaks: existing?.tieBreaks, updatedAt: now().toISOString() });
+    return { ok: true };
+  }
+
+  /** Store the order we chose for a category; only used where totals and guest votes are exactly equal. */
+  async function saveTieBreak(body: Record<string, unknown>) {
+    const catId = str(body.catId, 'Category', 64);
+    const order = Array.isArray(body.order) ? (body.order as string[]) : fail(400, 'order required');
+    const { byCat } = await livePhotosByCategory(await sortedCategories());
+    if (!byCat[catId]) fail(400, 'Unknown category');
+    if (new Set(order).size !== order.length || order.some((id) => !byCat[catId].includes(id))) fail(400, 'Invalid order');
+    const existing = await store.getAdminBallot();
+    await store.putAdminBallot({
+      ranks: existing?.ranks ?? {},
+      tieBreaks: { ...existing?.tieBreaks, [catId]: order },
+      updatedAt: now().toISOString(),
+    });
     return { ok: true };
   }
 
@@ -370,6 +387,7 @@ export function createApp(deps: Deps) {
       if (method === 'PUT' && path === '/api/admin/settings') return updateSettings(body);
       if (method === 'PUT' && path === '/api/admin/reveal') return setReveal(body);
       if (method === 'PUT' && path === '/api/admin/admin-ballot') return saveAdminBallot(body);
+      if (method === 'PUT' && path === '/api/admin/tie-break') return saveTieBreak(body);
       if (method === 'POST' && path === '/api/admin/reset') return reset(body);
     }
     return fail(404, 'Not found');

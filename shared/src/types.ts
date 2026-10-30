@@ -36,6 +36,8 @@ export interface Ballot {
 
 export interface AdminBallot {
   ranks: Picks;
+  /** catId -> photo ids in the order we chose, used only to settle exact ties. */
+  tieBreaks?: Picks;
   updatedAt: string;
 }
 
