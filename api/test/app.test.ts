@@ -172,6 +172,24 @@ describe('api', () => {
     expect(await winners(2)).toEqual([[1, 'A'], [2, 'B']]);
   });
 
+  it('results page is hidden until published (admins can preview), and shows totals without the bonus breakdown', async () => {
+    const admin = await adminToken();
+    const [c1] = await categories();
+    const [a, b] = [await submit(c1.id, 'A'), await submit(c1.id, 'B')];
+    await call('PUT', '/api/admin/settings', { votingOpen: true }, admin);
+    await call('POST', '/api/ballots', { id: 'v1', voterName: 'V', picks: { [c1.id]: [a, b] } }, admin);
+    await call('PUT', '/api/admin/admin-ballot', { ranks: { [c1.id]: [b] } }, admin);
+
+    expect((await call('GET', '/api/results')).status).toBe(403);
+    expect((await call('GET', '/api/results', undefined, admin)).status).toBe(200);
+    await call('PUT', '/api/admin/settings', { resultsPublished: true }, admin);
+    const res = (await call('GET', '/api/results')).body as { categories: { category: Category; rows: Record<string, unknown>[] }[] };
+    expect(res.categories).toHaveLength(1); // empty categories are left out
+    const rows = res.categories[0].rows;
+    expect(rows.map((r) => [r.place, r.votes, (r.photo as { caption: string }).caption])).toEqual([[1, 2, 'B'], [2, 1, 'A']]);
+    expect(Object.keys(rows[0]).sort()).toEqual(['photo', 'place', 'votes']);
+  });
+
   it('AC-01: categories can be added, renamed, reordered; non-empty ones cannot be deleted', async () => {
     const admin = await adminToken();
     const added = (await call('POST', '/api/admin/categories', { name: 'Best Pet' }, admin)).body as Category;

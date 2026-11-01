@@ -1,2 +1,6 @@
+# Let Facebook build a link preview for the shared results page; keep everything else out of search.
+User-agent: facebookexternalhit
+Allow: /results
+
 User-agent: *
 Disallow: /

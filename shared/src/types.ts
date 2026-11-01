@@ -54,6 +54,8 @@ export interface Settings {
   carouselSeconds: number;
   /** Photos per TV screen; one of TV_LAYOUTS' keys. */
   photosPerScreen: number;
+  /** When true, /results shows the final rankings and gallery to anyone with the link. */
+  resultsPublished: boolean;
   reveal: RevealState;
 }
 
@@ -77,6 +79,14 @@ export interface PublicState {
   settings: Settings;
   /** Only present while reveal is active: winners revealed so far for the current category. */
   revealed?: { category: Category; winners: RevealedWinner[] };
+}
+
+/** The public results page: final totals (bonus included, not broken out), ranked per category. */
+export interface PublicResults {
+  categories: {
+    category: Category;
+    rows: { place: number; votes: number; photo: PublicPhoto }[];
+  }[];
 }
 
 export const EVENT_NAME = 'Halloween at the Lane 2026';
@@ -103,5 +113,6 @@ export const DEFAULT_SETTINGS: Settings = {
   votingOpen: false,
   carouselSeconds: 10,
   photosPerScreen: 9,
+  resultsPublished: false,
   reveal: { active: false, catIndex: 0, step: 0 },
 };

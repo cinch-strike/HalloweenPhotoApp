@@ -14,6 +14,7 @@ import {
   type Photo,
   type Picks,
   type PublicPhoto,
+  type PublicResults,
   type PublicState,
   type ResultRow,
   type Settings,
@@ -132,6 +133,23 @@ export function createApp(deps: Deps) {
       };
     }
     return state;
+  }
+
+  /** Final rankings for sharing. Totals include our bonus but aren't broken out. Admins can preview before publishing. */
+  async function publicResults(req: Req): Promise<PublicResults> {
+    const s = await settings();
+    if (!s.resultsPublished && (await role(req)) !== 'admin') fail(403, 'Results aren’t published yet');
+    const categories = await sortedCategories();
+    const { out, photos } = await results(categories);
+    const byId = new Map(photos.map((p) => [p.id, p]));
+    return {
+      categories: categories
+        .filter((c) => out[c.id].length > 0)
+        .map((category) => ({
+          category,
+          rows: out[category.id].map((r) => ({ place: r.place, votes: r.total, photo: toPublic(byId.get(r.photoId)!) })),
+        })),
+    };
   }
 
   async function listPublicPhotos(): Promise<PublicPhoto[]> {
@@ -280,6 +298,7 @@ export function createApp(deps: Deps) {
     const next: Settings = { ...s };
     if (typeof body.submissionsOpen === 'boolean') next.submissionsOpen = body.submissionsOpen;
     if (typeof body.votingOpen === 'boolean') next.votingOpen = body.votingOpen;
+    if (typeof body.resultsPublished === 'boolean') next.resultsPublished = body.resultsPublished;
     if (body.carouselSeconds !== undefined) {
       const n = Number(body.carouselSeconds);
       if (!Number.isInteger(n) || n < 3 || n > 120) fail(400, 'Carousel seconds must be 3–120');
@@ -356,6 +375,7 @@ export function createApp(deps: Deps) {
 
     if (method === 'GET' && path === '/api/state') return getState();
     if (method === 'GET' && path === '/api/photos') return listPublicPhotos();
+    if (method === 'GET' && path === '/api/results') return publicResults(req);
     if (method === 'POST' && path === '/api/uploads') return createUpload(body);
     if (method === 'POST' && (x = m(/^\/api\/uploads\/([\w-]+)\/confirm$/))) return confirmUpload(x[1]);
 

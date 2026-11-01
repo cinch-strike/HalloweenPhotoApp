@@ -211,3 +211,28 @@ th { color: var(--text-muted); font-weight: 600; font-size: 14px; }
 .reveal-others img { height: 11vh; border-radius: 1vh; display: block; margin: 0 auto 0.8vh; }
 .pop { animation: pop 0.9s cubic-bezier(.2,1.4,.4,1); }
 @keyframes pop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* Public results page */
+.results-podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: 760px; }
+.results-winner {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 10px;
+  border-radius: var(--radius);
+  text-align: center;
+  min-height: 0;
+}
+.results-winner img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 10px; display: block; }
+.results-place { font-family: var(--font-display); font-size: 20px; }
+.results-caption { font-size: 18px; }
+.place-border-1 { border-color: var(--gold); }
+.place-border-2 { border-color: var(--silver); }
+.place-border-3 { border-color: var(--bronze); }
+.results-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+@media (max-width: 520px) {
+  .results-winner { padding: 6px; gap: 4px; }
+  .results-place { font-size: 14px; }
+  .results-caption { font-size: 13px; }
+  .results-winner .muted { font-size: 12px; }
+}

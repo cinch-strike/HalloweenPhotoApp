@@ -151,6 +151,10 @@ function ContestTab({ data, act, call }: TabProps) {
           <span>Voting open <span className="muted">— the kiosk accepts ballots</span></span>
           <input type="checkbox" checked={settings.votingOpen} onChange={(e) => act('PUT', '/api/admin/settings', { votingOpen: e.target.checked })} />
         </label>
+        <label className="toggle">
+          <span>Results page published <span className="muted">— anyone with the <a href="/results" target="_blank" rel="noreferrer">/results</a> link sees rankings, votes and all photos</span></span>
+          <input type="checkbox" checked={settings.resultsPublished} onChange={(e) => act('PUT', '/api/admin/settings', { resultsPublished: e.target.checked })} />
+        </label>
         <div className="row">
           <label htmlFor="secs" style={{ margin: 0 }}>TV seconds per screen</label>
           <input id="secs" type="number" min={3} max={120} value={seconds} onChange={(e) => setSeconds(e.target.value)} style={{ width: 100 }} />

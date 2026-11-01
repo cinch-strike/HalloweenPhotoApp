@@ -6,6 +6,7 @@ import Submit from './pages/Submit';
 import Tv from './pages/Tv';
 import Vote from './pages/Vote';
 import Admin from './pages/Admin';
+import Results from './pages/Results';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -14,6 +15,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/tv" element={<Tv />} />
         <Route path="/vote" element={<Vote />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/results" element={<Results />} />
         <Route path="*" element={<Submit />} />
       </Routes>
     </BrowserRouter>

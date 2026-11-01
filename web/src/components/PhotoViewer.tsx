@@ -7,7 +7,7 @@ interface Props {
   onIndex: (i: number) => void;
   onClose: () => void;
   /** Label + action for the main button, e.g. "Pick" / "Unpick". */
-  action: { label: string; onClick: () => void; disabled?: boolean; primary?: boolean };
+  action?: { label: string; onClick: () => void; disabled?: boolean; primary?: boolean };
   status?: string;
 }
 
@@ -38,9 +38,11 @@ export default function PhotoViewer({ photos, index, onIndex, onClose, action, s
       {status && <div className="center muted">{status}</div>}
       <div className="row" style={{ justifyContent: 'center' }}>
         <button onClick={() => go(-1)} disabled={photos.length < 2} aria-label="Previous photo">◀</button>
-        <button className={action.primary ? 'btn-primary' : ''} onClick={action.onClick} disabled={action.disabled} style={{ minWidth: 180 }}>
-          {action.label}
-        </button>
+        {action && (
+          <button className={action.primary ? 'btn-primary' : ''} onClick={action.onClick} disabled={action.disabled} style={{ minWidth: 180 }}>
+            {action.label}
+          </button>
+        )}
         <button onClick={() => go(1)} disabled={photos.length < 2} aria-label="Next photo">▶</button>
       </div>
     </div>
