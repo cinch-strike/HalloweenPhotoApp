@@ -152,7 +152,7 @@ function ContestTab({ data, act, call }: TabProps) {
           <input type="checkbox" checked={settings.votingOpen} onChange={(e) => act('PUT', '/api/admin/settings', { votingOpen: e.target.checked })} />
         </label>
         <label className="toggle">
-          <span>Results page published <span className="muted">— anyone with the <a href="/results" target="_blank" rel="noreferrer">/results</a> link sees rankings, votes and all photos</span></span>
+          <span>Results page published <span className="muted">— anyone with the <a href="/results" target="_blank" rel="noreferrer">/results</a> link sees rankings and votes (no photos). While on, photos are hidden from the public site (TV, kiosk).</span></span>
           <input type="checkbox" checked={settings.resultsPublished} onChange={(e) => act('PUT', '/api/admin/settings', { resultsPublished: e.target.checked })} />
         </label>
         <div className="row">

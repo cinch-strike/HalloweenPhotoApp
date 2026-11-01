@@ -120,7 +120,8 @@ export function createApp(deps: Deps) {
   async function getState(): Promise<PublicState> {
     const [s, categories] = await Promise.all([settings(), sortedCategories()]);
     const state: PublicState = { categories, settings: s };
-    if (s.reveal.active && categories[s.reveal.catIndex]) {
+    // Once results are public the event is over: stop exposing photos through the reveal.
+    if (s.reveal.active && !s.resultsPublished && categories[s.reveal.catIndex]) {
       const category = categories[s.reveal.catIndex];
       const { out, photos } = await results([category]);
       const podium = out[category.id].filter((r) => r.total > 0).slice(0, 3);
@@ -141,18 +142,20 @@ export function createApp(deps: Deps) {
     if (!s.resultsPublished && (await role(req)) !== 'admin') fail(403, 'Results aren’t published yet');
     const categories = await sortedCategories();
     const { out, photos } = await results(categories);
-    const byId = new Map(photos.map((p) => [p.id, p]));
+    const caption = new Map(photos.map((p) => [p.id, p.caption]));
     return {
       categories: categories
         .filter((c) => out[c.id].length > 0)
         .map((category) => ({
           category,
-          rows: out[category.id].map((r) => ({ place: r.place, votes: r.total, photo: toPublic(byId.get(r.photoId)!) })),
+          rows: out[category.id].map((r) => ({ place: r.place, votes: r.total, caption: caption.get(r.photoId)! })),
         })),
     };
   }
 
-  async function listPublicPhotos(): Promise<PublicPhoto[]> {
+  async function listPublicPhotos(req: Req): Promise<PublicPhoto[]> {
+    // After results are published (event over), photos are no longer listed publicly — only for admins.
+    if ((await settings()).resultsPublished && (await role(req)) !== 'admin') return [];
     const { photos } = await livePhotosByCategory(await sortedCategories());
     return photos.map(toPublic);
   }
@@ -374,7 +377,7 @@ export function createApp(deps: Deps) {
     let x: RegExpMatchArray | null;
 
     if (method === 'GET' && path === '/api/state') return getState();
-    if (method === 'GET' && path === '/api/photos') return listPublicPhotos();
+    if (method === 'GET' && path === '/api/photos') return listPublicPhotos(req);
     if (method === 'GET' && path === '/api/results') return publicResults(req);
     if (method === 'POST' && path === '/api/uploads') return createUpload(body);
     if (method === 'POST' && (x = m(/^\/api\/uploads\/([\w-]+)\/confirm$/))) return confirmUpload(x[1]);

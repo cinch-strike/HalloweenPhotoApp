@@ -172,7 +172,7 @@ describe('api', () => {
     expect(await winners(2)).toEqual([[1, 'A'], [2, 'B']]);
   });
 
-  it('results page is hidden until published (admins can preview), and shows totals without the bonus breakdown', async () => {
+  it('results page is hidden until published (admins can preview), shows totals only, and never exposes photos', async () => {
     const admin = await adminToken();
     const [c1] = await categories();
     const [a, b] = [await submit(c1.id, 'A'), await submit(c1.id, 'B')];
@@ -186,8 +186,14 @@ describe('api', () => {
     const res = (await call('GET', '/api/results')).body as { categories: { category: Category; rows: Record<string, unknown>[] }[] };
     expect(res.categories).toHaveLength(1); // empty categories are left out
     const rows = res.categories[0].rows;
-    expect(rows.map((r) => [r.place, r.votes, (r.photo as { caption: string }).caption])).toEqual([[1, 2, 'B'], [2, 1, 'A']]);
-    expect(Object.keys(rows[0]).sort()).toEqual(['photo', 'place', 'votes']);
+    expect(rows.map((r) => [r.place, r.votes, r.caption])).toEqual([[1, 2, 'B'], [2, 1, 'A']]);
+    expect(Object.keys(rows[0]).sort()).toEqual(['caption', 'place', 'votes']); // no photo URLs
+
+    // Once published, photos are no longer listed publicly or via the reveal; admins still see them.
+    expect((await call('GET', '/api/photos')).body).toEqual([]);
+    expect(((await call('GET', '/api/photos', undefined, admin)).body as unknown[]).length).toBe(2);
+    await call('PUT', '/api/admin/reveal', { active: true, catIndex: 0, step: 3 }, admin);
+    expect(((await call('GET', '/api/state')).body as PublicState).revealed).toBeUndefined();
   });
 
   it('AC-01: categories can be added, renamed, reordered; non-empty ones cannot be deleted', async () => {

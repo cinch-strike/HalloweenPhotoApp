@@ -54,7 +54,7 @@ export interface Settings {
   carouselSeconds: number;
   /** Photos per TV screen; one of TV_LAYOUTS' keys. */
   photosPerScreen: number;
-  /** When true, /results shows the final rankings and gallery to anyone with the link. */
+  /** When true, /results shows final rankings (captions + votes, no photos) to anyone, and photos stop being public. */
   resultsPublished: boolean;
   reveal: RevealState;
 }
@@ -81,11 +81,11 @@ export interface PublicState {
   revealed?: { category: Category; winners: RevealedWinner[] };
 }
 
-/** The public results page: final totals (bonus included, not broken out), ranked per category. */
+/** The public results page: final totals (bonus included, not broken out), ranked per category. No photos, by design. */
 export interface PublicResults {
   categories: {
     category: Category;
-    rows: { place: number; votes: number; photo: PublicPhoto }[];
+    rows: { place: number; votes: number; caption: string }[];
   }[];
 }
 
