@@ -38,6 +38,8 @@ export interface AdminBallot {
   ranks: Picks;
   /** catId -> photo ids in the order we chose, used only to settle exact ties. */
   tieBreaks?: Picks;
+  /** photoId -> manual vote adjustment we decided on (e.g. +1 to settle a tie). Added to the total. */
+  adjustments?: Record<string, number>;
   updatedAt: string;
 }
 
@@ -64,6 +66,7 @@ export interface ResultRow {
   publicVotes: number;
   adminPick: boolean;
   bonusVotes: number;
+  adjustment: number;
   total: number;
   place: number;
   tied: boolean;

@@ -20,6 +20,7 @@ export function scoreCategory(
   catId: string,
   adminPicks: string[] = [],
   tieBreak: string[] = [],
+  adjustments: Record<string, number> = {},
 ): ResultRow[] {
   const ids = new Set(photoIds);
   const votes = new Map(photoIds.map((id) => [id, 0]));
@@ -35,7 +36,8 @@ export function scoreCategory(
     const publicVotes = votes.get(photoId)!;
     const adminPick = picks.has(photoId);
     const bonusVotes = adminPick ? bonus : 0;
-    return { photoId, publicVotes, adminPick, bonusVotes, total: publicVotes + bonusVotes, place: 0, tied: false };
+    const adjustment = adjustments[photoId] ?? 0;
+    return { photoId, publicVotes, adminPick, bonusVotes, adjustment, total: publicVotes + bonusVotes + adjustment, place: 0, tied: false };
   });
 
   const tb = (id: string) => (tieBreak.includes(id) ? tieBreak.indexOf(id) : Number.MAX_SAFE_INTEGER);

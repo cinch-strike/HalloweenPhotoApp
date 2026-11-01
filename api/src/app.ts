@@ -100,7 +100,7 @@ export function createApp(deps: Deps) {
     const { photos, byCat } = await livePhotosByCategory(categories);
     const [ballots, admin] = await Promise.all([store.listBallots(), store.getAdminBallot()]);
     const out: Record<string, ResultRow[]> = {};
-    for (const c of categories) out[c.id] = scoreCategory(byCat[c.id], ballots, c.id, admin?.ranks[c.id] ?? [], admin?.tieBreaks?.[c.id] ?? []);
+    for (const c of categories) out[c.id] = scoreCategory(byCat[c.id], ballots, c.id, admin?.ranks[c.id] ?? [], admin?.tieBreaks?.[c.id] ?? [], admin?.adjustments ?? {});
     return { out, photos, ballots, admin };
   }
 
@@ -334,7 +334,7 @@ export function createApp(deps: Deps) {
     const error = validateAdminRanks(ranks, byCat);
     if (error) fail(400, error);
     const existing = await store.getAdminBallot();
-    await store.putAdminBallot({ ranks, tieBreaks: existing?.tieBreaks, updatedAt: now().toISOString() });
+    await store.putAdminBallot({ ...existing, ranks, updatedAt: now().toISOString() });
     return { ok: true };
   }
 
@@ -347,10 +347,28 @@ export function createApp(deps: Deps) {
     if (new Set(order).size !== order.length || order.some((id) => !byCat[catId].includes(id))) fail(400, 'Invalid order');
     const existing = await store.getAdminBallot();
     await store.putAdminBallot({
+      ...existing,
       ranks: existing?.ranks ?? {},
       tieBreaks: { ...existing?.tieBreaks, [catId]: order },
       updatedAt: now().toISOString(),
     });
+    return { ok: true };
+  }
+
+  /** Manual +/- vote adjustment on one photo, decided by us (visible only in admin; included in public totals). */
+  async function adjustVotes(body: Record<string, unknown>) {
+    const photoId = str(body.photoId, 'Photo', 64);
+    const delta = Number(body.delta);
+    if (delta !== 1 && delta !== -1) fail(400, 'delta must be 1 or -1');
+    const photo = (await store.getPhoto(photoId)) ?? fail(404, 'Photo not found');
+    if (photo.status !== 'live') fail(400, 'Photo is not live');
+    const existing = await store.getAdminBallot();
+    const adjustments = { ...existing?.adjustments };
+    const next = (adjustments[photoId] ?? 0) + delta;
+    if (Math.abs(next) > 50) fail(400, 'Adjustment limit reached');
+    if (next === 0) delete adjustments[photoId];
+    else adjustments[photoId] = next;
+    await store.putAdminBallot({ ...existing, ranks: existing?.ranks ?? {}, adjustments, updatedAt: now().toISOString() });
     return { ok: true };
   }
 
@@ -411,6 +429,7 @@ export function createApp(deps: Deps) {
       if (method === 'PUT' && path === '/api/admin/reveal') return setReveal(body);
       if (method === 'PUT' && path === '/api/admin/admin-ballot') return saveAdminBallot(body);
       if (method === 'PUT' && path === '/api/admin/tie-break') return saveTieBreak(body);
+      if (method === 'PUT' && path === '/api/admin/adjust') return adjustVotes(body);
       if (method === 'POST' && path === '/api/admin/reset') return reset(body);
     }
     return fail(404, 'Not found');

@@ -404,7 +404,7 @@ function ResultsTab({ data, act }: TabProps) {
             )}
             {rows.length === 0 ? <p className="muted">No photos.</p> : (
               <table>
-                <thead><tr><th>Place</th><th></th><th>Costume</th><th>Guest votes</th><th>Our pick</th><th>Bonus</th><th>Total</th><th></th></tr></thead>
+                <thead><tr><th>Place</th><th></th><th>Costume</th><th>Guest votes</th><th>Our pick</th><th>Bonus</th><th>Adjust</th><th>Total</th><th></th></tr></thead>
                 <tbody>
                   {rows.map((r, i) => {
                     const p = photo(r.photoId);
@@ -416,6 +416,11 @@ function ResultsTab({ data, act }: TabProps) {
                         <td>{r.publicVotes}</td>
                         <td>{r.adminPick ? '✓' : '—'}</td>
                         <td>{r.bonusVotes ? `+${r.bonusVotes}` : ''}</td>
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          <button className="btn-small" style={{ minHeight: 30, padding: '2px 10px' }} aria-label="One vote less" onClick={() => act('PUT', '/api/admin/adjust', { photoId: r.photoId, delta: -1 })}>−</button>
+                          <span style={{ display: 'inline-block', minWidth: 30, textAlign: 'center' }}>{r.adjustment > 0 ? `+${r.adjustment}` : r.adjustment || ''}</span>
+                          <button className="btn-small" style={{ minHeight: 30, padding: '2px 10px' }} aria-label="One vote more" onClick={() => act('PUT', '/api/admin/adjust', { photoId: r.photoId, delta: 1 })}>+</button>
+                        </td>
                         <td><b>{r.total}</b></td>
                         <td>
                           {i > 0 && rows[i - 1].total === r.total && rows[i - 1].publicVotes === r.publicVotes && (

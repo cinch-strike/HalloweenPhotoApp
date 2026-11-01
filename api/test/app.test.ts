@@ -196,6 +196,23 @@ describe('api', () => {
     expect(((await call('GET', '/api/state')).body as PublicState).revealed).toBeUndefined();
   });
 
+  it('manual adjustment adds to the total, breaks a tie, and survives saving our picks', async () => {
+    const admin = await adminToken();
+    const [c1] = await categories();
+    const [a, b] = [await submit(c1.id, 'Addams'), await submit(c1.id, 'Other')];
+    await call('PUT', '/api/admin/settings', { votingOpen: true }, admin);
+    await call('POST', '/api/ballots', { id: 'v1', voterName: 'V', picks: { [c1.id]: [a, b] } }, admin);
+    expect((await call('PUT', '/api/admin/adjust', { photoId: a, delta: 5 }, admin)).status).toBe(400);
+    await call('PUT', '/api/admin/adjust', { photoId: a, delta: 1 }, admin);
+    await call('PUT', '/api/admin/admin-ballot', { ranks: {} }, admin);
+    type Data = { results: Record<string, { photoId: string; total: number; adjustment: number; place: number; tied: boolean }[]> };
+    const rows = ((await call('GET', '/api/admin/data', undefined, admin)).body as Data).results[c1.id];
+    expect(rows.map((r) => [r.photoId, r.total, r.adjustment, r.place, r.tied])).toEqual([[a, 2, 1, 1, false], [b, 1, 0, 2, false]]);
+    await call('PUT', '/api/admin/adjust', { photoId: a, delta: -1 }, admin);
+    const after = ((await call('GET', '/api/admin/data', undefined, admin)).body as Data).results[c1.id];
+    expect(after.every((r) => r.total === 1 && r.adjustment === 0)).toBe(true);
+  });
+
   it('AC-01: categories can be added, renamed, reordered; non-empty ones cannot be deleted', async () => {
     const admin = await adminToken();
     const added = (await call('POST', '/api/admin/categories', { name: 'Best Pet' }, admin)).body as Category;
